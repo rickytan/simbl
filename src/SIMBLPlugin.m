@@ -8,117 +8,74 @@
 
 @implementation SIMBLPlugin
 
-+ (SIMBLPlugin*) bundleWithPath:(NSString*)_path
++ (SIMBLPlugin*) bundleWithPath:(NSString*)path
 {
-	return [[[SIMBLPlugin alloc] initWithPath:_path] autorelease];
+    return [[SIMBLPlugin alloc] initWithPath:path];
 }
 
-- (NSString*) path
+- (SIMBLPlugin*) initWithPath:(NSString*)path
 {
-	return path;
-}
+    if (!(self = [super init]))
+        return nil;
+    self.path = path;
 
-- (void) setPath:(NSString*)_path
-{
-	if (path && (!_path || ![path isEqualToString:_path]))
-		[path autorelease];
-	
-	if (_path)
-		path = [_path copy];
-	else
-		path = _path;
-}
+    NSArray* bundlePathParts = @[path, @"Contents", @"Info.plist"];
+    if (nil == bundlePathParts)
+        return nil;
+    NSString* bundlePath = [NSString pathWithComponents:bundlePathParts];
+    if (nil == bundlePath) {
+        NSLog(@"Unable to create bundle path string from components: %@", bundlePathParts);
+        return nil;
+    }
+    NSDictionary* bundleDict = [NSDictionary dictionaryWithContentsOfFile:bundlePath];
+    if (nil == bundleDict) {
+        NSLog(@"Unable to create dictionary from bundle at path '%@'", bundlePath);
+        return nil;
+    }
+    if (0 == bundleDict.count) {
+        NSLog(@"Warning: Empty dictionary created from bundle at path '%@'", bundlePath);
+        return nil;
+    }
 
-- (NSDictionary*) info
-{
-	return info;
-}
-
-- (void) setInfo:(NSDictionary*)_info
-{
-	if (info == _info)
-		return;
-	
-	if (_info)
-		[_info retain];
-	
-	if (info)
-		[info release];
-	
-	info = _info;
-}
-
-- (SIMBLPlugin*) initWithPath:(NSString*)_path
-{
-	if (!(self = [super init]))
-		return nil;
-	[self setPath:_path];
-
-NSArray* bundlePathParts = [NSArray arrayWithObjects:_path, @"Contents", @"Info.plist", nil];
-	if (nil == bundlePathParts)
-		return nil;
-	NSString* bundlePath = [NSString pathWithComponents:bundlePathParts];
-	if (nil == bundlePath) {
-		NSLog(@"Unable to create bundle path string from components: %@", bundlePathParts);
-		return nil;
-	}
-	NSDictionary* bundleDict = [NSDictionary dictionaryWithContentsOfFile:bundlePath];
-	if (nil == bundleDict) {
-		NSLog(@"Unable to create dictionary from bundle at path '%@'", bundlePath);
-		return nil;
-	}
-	if (0 == [bundleDict count]) {
-		NSLog(@"Warning: Empty dictionary created from bundle at path '%@'", bundlePath);
-		return nil;
-	}
-
-	[self setInfo:bundleDict];
-	return self;
+    self.info = bundleDict;
+    return self;
 
 }
 
 - (NSString*) bundleIdentifier
 {
-	return [info objectForKey:@"CFBundleIdentifier"];
+    return _info[@"CFBundleIdentifier"];
 }
 
 - (id) objectForInfoDictionaryKey:(NSString*)key
 {
-	return [info objectForKey:key];
+    return _info[key];
 }
 
 - (NSString*) _dt_info
 {
-	return [self objectForInfoDictionaryKey: @"CFBundleGetInfoString"];
+    return [self objectForInfoDictionaryKey: @"CFBundleGetInfoString"];
 }
 
 - (NSString*) _dt_version
 {
-	return [self objectForInfoDictionaryKey: @"CFBundleShortVersionString"];
+    return [self objectForInfoDictionaryKey: @"CFBundleShortVersionString"];
 }
 
 - (NSString*) _dt_bundleVersion
 {
-	return [self objectForInfoDictionaryKey: @"CFBundleVersion"];
+    return [self objectForInfoDictionaryKey: @"CFBundleVersion"];
 }
 
 - (NSString*) _dt_name
 {
-	NSString* name = [self objectForInfoDictionaryKey:@"CFBundleName"];
-	if (name != nil)
-		return name;
-	else
-		return [[self path] lastPathComponent];
+    NSString* name = [self objectForInfoDictionaryKey:@"CFBundleName"];
+    if (name != nil)
+        return name;
+    else
+        return self.path.lastPathComponent;
 }
 
-- (void) dealloc 
-{
-	if (path)
-		[path release];
-	if (info)
-		[info release];
-	[super dealloc];
-}
 
 @end
 
@@ -126,22 +83,22 @@ NSArray* bundlePathParts = [NSArray arrayWithObjects:_path, @"Contents", @"Info.
 
 - (NSString*) _dt_info
 {
-	return [self objectForInfoDictionaryKey: @"CFBundleGetInfoString"];
+    return [self objectForInfoDictionaryKey: @"CFBundleGetInfoString"];
 }
 
 - (NSString*) _dt_version
 {
-	return [self objectForInfoDictionaryKey: @"CFBundleShortVersionString"];
+    return [self objectForInfoDictionaryKey: @"CFBundleShortVersionString"];
 }
 
 - (NSString*) _dt_bundleVersion
 {
-	return [self objectForInfoDictionaryKey: @"CFBundleVersion"];
+    return [self objectForInfoDictionaryKey: @"CFBundleVersion"];
 }
 
 - (NSString*) _dt_name
 {
-	return [self objectForInfoDictionaryKey:@"CFBundleName"];
+    return [self objectForInfoDictionaryKey:@"CFBundleName"];
 }
 
 @end

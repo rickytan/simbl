@@ -13,7 +13,7 @@
 	va_list ap;
 	va_start(ap, _details);
 
-	NSString* detailsFormatted = [[[NSString alloc] initWithFormat:_details arguments:ap] autorelease];
+	NSString* detailsFormatted = [[NSString alloc] initWithFormat:_details arguments:ap];
 	va_end(ap);
 
 	NSBeginAlertSheet(

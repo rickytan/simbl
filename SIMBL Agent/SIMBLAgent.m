@@ -46,13 +46,16 @@ fail:
 
 @end
 
+@interface SIMBLAgent () <SBApplicationDelegate>
+
+@end
 
 @implementation SIMBLAgent
 
 - (void) applicationDidFinishLaunching:(NSNotification*)notificaion
 {
 	NSProcessInfo* procInfo = [NSProcessInfo processInfo];
-	if ([(NSString*)[[procInfo arguments] lastObject] hasPrefix:@"-psn"]) {
+	if ([(NSString*)procInfo.arguments.lastObject hasPrefix:@"-psn"]) {
 		// if we were started interactively, load in launchd and terminate
 		SIMBLLogNotice(@"installing into launchd");
 		[self loadInLaunchd];
@@ -60,7 +63,7 @@ fail:
 	}
 	else {
 		SIMBLLogInfo(@"agent started");
-		[[[NSWorkspace sharedWorkspace] notificationCenter]
+		[[NSWorkspace sharedWorkspace].notificationCenter
 				addObserver:self selector:@selector(injectSIMBL:)
 				name:NSWorkspaceDidLaunchApplicationNotification object:nil];
 	}
@@ -68,9 +71,9 @@ fail:
 
 - (void) loadInLaunchd
 {
-	NSTask* task = [NSTask launchedTaskWithLaunchPath:@"/bin/launchctl" arguments:[NSArray arrayWithObjects:@"load", @"-F", @"-S", @"Aqua", @"/Library/ScriptingAdditions/SIMBL.osax/Contents/Resources/SIMBL Agent.app/Contents/Resources/net.culater.SIMBL.Agent.plist", nil]];
+	NSTask* task = [NSTask launchedTaskWithLaunchPath:@"/bin/launchctl" arguments:@[@"load", @"-F", @"-S", @"Aqua", @"/Library/ScriptingAdditions/SIMBL.osax/Contents/Resources/SIMBL Agent.app/Contents/Resources/net.culater.SIMBL.Agent.plist"]];
 	[task waitUntilExit];
-	if ([task terminationStatus] != 0)
+	if (task.terminationStatus != 0)
 		SIMBLLogNotice(@"launchctl returned %d", [task terminationStatus]);
 }
 
@@ -82,13 +85,13 @@ fail:
 	NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
 	[defaults synchronize];
 
-	NSDictionary* appInfo = [notification userInfo];
-	NSString* appName = [appInfo objectForKey:@"NSApplicationName"];
+	NSDictionary* appInfo = notification.userInfo;
+	NSString* appName = appInfo[@"NSApplicationName"];
 	SIMBLLogInfo(@"%@ started", appName);
 	SIMBLLogDebug(@"app start notification: %@", appInfo);
 		
 	// check to see if there are plugins to load
-	if ([SIMBL shouldInstallPluginsIntoApplication:[NSBundle bundleWithPath:[appInfo objectForKey:@"NSApplicationPath"]]] == NO) {
+	if ([SIMBL shouldInstallPluginsIntoApplication:[NSBundle bundleWithPath:appInfo[@"NSApplicationPath"]]] == NO) {
 		return;
 	}
 	
@@ -97,7 +100,7 @@ fail:
 	// ScriptingBridge code. Due to the launchd behavior of restarting crashed
 	// agents, this is mostly harmless. To reduce the crashing we leave a
 	// blacklist to prevent injection.  By default, this is empty.
-	NSString* appIdentifier = [appInfo objectForKey:@"NSApplicationBundleIdentifier"];
+	NSString* appIdentifier = appInfo[@"NSApplicationBundleIdentifier"];
 	NSArray* blacklistedIdentifiers = [defaults stringArrayForKey:@"SIMBLApplicationIdentifierBlacklist"];
 	if (blacklistedIdentifiers != nil && 
 			[blacklistedIdentifiers containsObject:appIdentifier]) {
@@ -121,9 +124,9 @@ fail:
 	AEEventID eventID = minorOSVersion > 5 ? 'load' : 'leop';
 
 	// Find the process to target
-	pid_t pid = [[appInfo objectForKey:@"NSApplicationProcessIdentifier"] intValue];
+	pid_t pid = [appInfo[@"NSApplicationProcessIdentifier"] intValue];
 	SBApplication* app = [SBApplication applicationWithProcessIdentifier:pid];
-	[app setDelegate:self];
+	app.delegate = self;
 	if (!app) {
 		SIMBLLogNotice(@"Can't find app with pid %d", pid);
 		return;
@@ -133,7 +136,7 @@ fail:
 	// When initializing, you need to wait for the event reply, otherwise the
 	// event might get dropped on the floor. This is only seems to happen in 10.5
 	// but it shouldn't harm anything.
-	[app setSendMode:kAEWaitReply | kAENeverInteract | kAEDontRecord];
+	app.sendMode = kAEWaitReply | kAENeverInteract | kAEDontRecord;
 	id initReply = [app sendEvent:kASAppleScriptSuite id:kGetAEUT parameters:0];
 
 	// the reply here is of some unknown type - it is not an Objective-C object
@@ -146,7 +149,7 @@ fail:
 	// NSLog(@"initReply: %p '%64.64s'", initReply, (char*)initReply);
 	
 	// Inject!
-	[app setSendMode:kAENoReply | kAENeverInteract | kAEDontRecord];
+	app.sendMode = kAENoReply | kAENeverInteract | kAEDontRecord;
 	id injectReply = [app sendEvent:'SIMe' id:eventID parameters:0];
 	if (injectReply != nil) {
 		SIMBLLogNotice(@"unexpected injectReply: %@", injectReply);
@@ -155,11 +158,11 @@ fail:
 
 - (void) eventDidFail:(const AppleEvent*)event withError:(NSError*)error
 {
-	NSDictionary* userInfo = [error userInfo];
-	NSNumber* errorNumber = [userInfo objectForKey:@"ErrorNumber"];
+	NSDictionary* userInfo = error.userInfo;
+	NSNumber* errorNumber = userInfo[@"ErrorNumber"];
 	
 	// this error seems more common on Leopard
-	if (errorNumber && [errorNumber intValue] == errAEEventNotHandled) {
+	if (errorNumber && errorNumber.intValue == errAEEventNotHandled) {
 		SIMBLLogDebug(@"eventDidFail:'%4.4s' error:%@ userInfo:%@", (char*)&(event->descriptorType), error, [error userInfo]);
 	}
 	else {

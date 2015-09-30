@@ -225,6 +225,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 0700;
 			};
 			buildConfigurationList = E0E8F445085F4D0400DCD56F /* Build configuration list for PBXProject "SIMBL" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -352,7 +353,15 @@
 		276144C4105F51CB00F906F6 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_GC = unsupported;
+				GCC_VERSION = "";
 				INFOPLIST_FILE = "SIMBL Agent/Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.culater.${PRODUCT_NAME:identifier}";
 				PRODUCT_NAME = "SIMBL Agent";
 			};
 			name = Development;
@@ -360,7 +369,15 @@
 		276144C5105F51CB00F906F6 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_GC = unsupported;
+				GCC_VERSION = "";
 				INFOPLIST_FILE = "SIMBL Agent/Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.culater.${PRODUCT_NAME:identifier}";
 				PRODUCT_NAME = "SIMBL Agent";
 				PRODUCT_VERSION = 0.9.9;
 			};
@@ -369,7 +386,16 @@
 		E0E8F442085F4D0400DCD56F /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_GC = unsupported;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_VERSION = "";
 				INFOPLIST_FILE = rez/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.culater.${PRODUCT_NAME:identifier}.osax";
 				PRODUCT_NAME = SIMBL;
 				WRAPPER_EXTENSION = osax;
 			};
@@ -378,7 +404,15 @@
 		E0E8F443085F4D0400DCD56F /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_GC = unsupported;
+				GCC_VERSION = "";
 				INFOPLIST_FILE = rez/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.culater.${PRODUCT_NAME:identifier}.osax";
 				PRODUCT_NAME = SIMBL;
 				PRODUCT_VERSION = 0.9.9;
 				WRAPPER_EXTENSION = osax;
@@ -388,8 +422,8 @@
 		E0E8F446085F4D0400DCD56F /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				COPY_PHASE_STRIP = NO;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -400,14 +434,13 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_VERSION = 0.9.8;
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx;
 			};
 			name = Development;
 		};
 		E0E8F447085F4D0400DCD56F /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -415,7 +448,7 @@
 				GCC_VERSION = 4.2;
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_VERSION = 0.9.8;
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx;
 			};
 			name = Deployment;
 		};

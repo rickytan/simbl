@@ -11,11 +11,6 @@
 
 #define DTPathFromComponents(...) [NSString pathWithComponents:[NSArray arrayWithObjects:__VA_ARGS__, nil]]
 
-#define Yes [NSNumber numberWithBool:YES]
-#define No [NSNumber numberWithBool:NO]
-
-#define Int(x) [NSNumber numberWithInt:x]
-
 enum DTLogLevel
 {
 	DTLog_Developer = 0,

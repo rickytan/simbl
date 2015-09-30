@@ -25,24 +25,24 @@
 	</array>
 */
 
+
+OSErr pascal InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, SInt32 refcon)
+{
+    OSErr resultCode = noErr;
+    SIMBLLogInfo(@"load SIMBL plugins");
+    [SIMBL installPlugins];
+    return resultCode;
+}
+
 @implementation SIMBL
 
 static NSMutableDictionary* loadedBundleIdentifiers = nil;
-
-OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
-{
-	OSErr resultCode = noErr;
-	SIMBLLogInfo(@"load SIMBL plugins");
-	[SIMBL installPlugins];
-	return resultCode;
-}
 
 + (void) initialize
 {
 	NSUserDefaults* defaults = [[NSUserDefaults alloc] init];
 	[defaults addSuiteNamed:@"net.culater.SIMBL"];
-	[defaults registerDefaults:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:SIMBLLogLevelDefault], SIMBLPrefKeyLogLevel, nil]];
-	[defaults release];
+	[defaults registerDefaults:@{SIMBLPrefKeyLogLevel: @SIMBLLogLevelDefault}];
 }
 
 + (void) logMessage:(NSString*)message atLevel:(int)level
@@ -60,7 +60,7 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
 	NSArray* paths = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,  NSUserDomainMask | NSLocalDomainMask | NSNetworkDomainMask, YES);
 	for (NSString* libraryPath in paths) {
 		NSString* simblPath = [libraryPath stringByAppendingPathComponent:SIMBLPluginPath];
-		NSArray* simblBundles = [[[NSFileManager defaultManager] directoryContentsAtPath:simblPath] pathsMatchingExtensions:[NSArray arrayWithObject:@"bundle"]];
+		NSArray* simblBundles = [[[NSFileManager defaultManager] directoryContentsAtPath:simblPath] pathsMatchingExtensions:@[@"bundle"]];
 		for (NSString* bundleName in simblBundles) {
 			[pluginPathList addObject:[simblPath stringByAppendingPathComponent:bundleName]];
 		}
@@ -115,7 +115,7 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
 + (BOOL) shouldApplication:(NSBundle*)_appBundle loadBundleAtPath:(NSString*)_bundlePath
 {
 	SIMBLLogDebug(@"checking bundle %@", _bundlePath);
-	_bundlePath = [_bundlePath stringByStandardizingPath];
+	_bundlePath = _bundlePath.stringByStandardizingPath;
 	SIMBLPlugin* pluginBundle = [SIMBLPlugin bundleWithPath:_bundlePath];
 	if (pluginBundle == nil) {
 		SIMBLLogNotice(@"Unable to load bundle at path '%@'", _bundlePath);
@@ -160,7 +160,7 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
 	// this is common if you have User vs. System-wide installs - probably mostly for developers
 	// "physician, heal thyself!"
 	NSString* pluginIdentifier = [pluginBundle bundleIdentifier];
-	if ([loadedBundleIdentifiers objectForKey:pluginIdentifier] != nil)
+	if (loadedBundleIdentifiers[pluginIdentifier] != nil)
 		return NO;
 	return [SIMBL loadBundle:pluginBundle];
 }
@@ -174,7 +174,7 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
  */
 + (BOOL) shouldApplication:(NSBundle*)_appBundle loadBundle:(SIMBLPlugin*)_bundle withApplicationIdentifiers:(NSArray*)_applicationIdentifiers
 {	
-	NSString* appIdentifier = [_appBundle bundleIdentifier];
+	NSString* appIdentifier = _appBundle.bundleIdentifier;
 	for (NSString* specifiedIdentifier in _applicationIdentifiers) {
 		SIMBLLogDebug(@"checking bundle %@ for identifier %@", [_bundle bundleIdentifier], specifiedIdentifier);
 		if ([specifiedIdentifier isEqualToString:appIdentifier] == YES ||
@@ -197,20 +197,20 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
  */
 + (BOOL) shouldApplication:(NSBundle*)_appBundle loadBundle:(SIMBLPlugin*)_bundle withTargetApplications:(NSArray*)_targetApplications
 {
-	NSString* appIdentifier = [_appBundle bundleIdentifier];
+	NSString* appIdentifier = _appBundle.bundleIdentifier;
 	for (NSDictionary* targetAppProperties in _targetApplications) {
-		NSString* targetAppIdentifier = [targetAppProperties objectForKey:SIMBLBundleIdentifier];
+		NSString* targetAppIdentifier = targetAppProperties[SIMBLBundleIdentifier];
 		SIMBLLogDebug(@"checking target identifier %@", targetAppIdentifier);
 		if ([targetAppIdentifier isEqualToString:appIdentifier] == NO &&
 				[targetAppIdentifier isEqualToString:@"*"] == NO)
 			continue;
 
-		NSString* targetAppPath = [targetAppProperties objectForKey:SIMBLTargetApplicationPath];
-		if (targetAppPath && [targetAppPath isEqualToString:[_appBundle bundlePath]] == NO)
+		NSString* targetAppPath = targetAppProperties[SIMBLTargetApplicationPath];
+		if (targetAppPath && [targetAppPath isEqualToString:_appBundle.bundlePath] == NO)
 			continue;
 
 		// FIXME: this has never been used - it should probably be removed.
-		NSArray* requiredFrameworks = [targetAppProperties objectForKey:SIMBLRequiredFrameworks];
+		NSArray* requiredFrameworks = targetAppProperties[SIMBLRequiredFrameworks];
 		BOOL missingFramework = NO;
 		if (requiredFrameworks)
 		{
@@ -219,9 +219,9 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
 			NSDictionary* requiredFramework;
 			while ((requiredFramework = [requiredFrameworkEnum nextObject]) && missingFramework == NO)
 			{
-				NSBundle* framework = [NSBundle bundleWithIdentifier:[requiredFramework objectForKey:@"BundleIdentifier"]];
-				NSString* frameworkPath = [framework bundlePath];
-				NSString* requiredPath = [requiredFramework objectForKey:@"BundlePath"];
+				NSBundle* framework = [NSBundle bundleWithIdentifier:requiredFramework[@"BundleIdentifier"]];
+				NSString* frameworkPath = framework.bundlePath;
+				NSString* requiredPath = requiredFramework[@"BundlePath"];
 				if ([frameworkPath isEqualToString:requiredPath] == NO) {				
 					missingFramework = YES;
 				}
@@ -231,16 +231,16 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
 		if (missingFramework)
 			continue;
 		
-		int appVersion = [[_appBundle _dt_bundleVersion] intValue];
+		int appVersion = [_appBundle _dt_bundleVersion].intValue;
 		
 		int minVersion = 0;
 		NSNumber* number;
-		if ((number = [targetAppProperties objectForKey:SIMBLMinBundleVersion]))
-			minVersion = [number intValue];
+		if ((number = targetAppProperties[SIMBLMinBundleVersion]))
+			minVersion = number.intValue;
 			
 		int maxVersion = 0;
-		if ((number = [targetAppProperties objectForKey:SIMBLMaxBundleVersion]))
-			maxVersion = [number intValue];
+		if ((number = targetAppProperties[SIMBLMaxBundleVersion]))
+			maxVersion = number.intValue;
 		
 		if ((maxVersion && appVersion > maxVersion) || (minVersion && appVersion < minVersion))
 		{
@@ -260,21 +260,21 @@ OSErr InjectEventHandler(const AppleEvent *ev, AppleEvent *reply, long refcon)
 	@try
 	{
 		// getting the principalClass should force the bundle to load
-		NSBundle* bundle = [NSBundle bundleWithPath:[_plugin path]];
-		Class principalClass = [bundle principalClass];
+		NSBundle* bundle = [NSBundle bundleWithPath:_plugin.path];
+		Class principalClass = bundle.principalClass;
 		
 		// if the principal class has an + (void) install message, call it
 		if (principalClass && class_getClassMethod(principalClass, @selector(install)))
 			[principalClass install];
 		
 		// set that we've loaded this bundle to prevent collisions
-		[loadedBundleIdentifiers setObject:@"loaded" forKey:[bundle bundleIdentifier]];
+		loadedBundleIdentifiers[bundle.bundleIdentifier] = @"loaded";
 		
 		return YES;
 	}
 	@catch (NSException* exception)
 	{
-		[NSAlert errorAlert:NSLocalizedStringFromTableInBundle(@"Error", SIMBLStringTable, DTOwnerBundle, @"Error alert primary message") withDetails:NSLocalizedStringFromTableInBundle(@"Failed to load the %@ plugin.\n%@", SIMBLStringTable, DTOwnerBundle, @"Error alert details, sub plugin name and error reason"), [_plugin _dt_name], [exception reason]];
+		[NSAlert errorAlert:NSLocalizedStringFromTableInBundle(@"Error", SIMBLStringTable, DTOwnerBundle, @"Error alert primary message") withDetails:NSLocalizedStringFromTableInBundle(@"Failed to load the %@ plugin.\n%@", SIMBLStringTable, DTOwnerBundle, @"Error alert details, sub plugin name and error reason"), [_plugin _dt_name], exception.reason];
 	}
 	
 	return NO;
